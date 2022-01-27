@@ -198,6 +198,7 @@ void GazeboRosControlPlugin::Load(gazebo::physics::ModelPtr parent, sdf::Element
 
   // There's currently no direct way to set parameters to the plugin's node
   // So we have to parse the plugin file manually and set it to the node's context.
+  std::string ns;
   auto rcl_context = impl_->model_nh_->get_node_base_interface()->get_context()->get_rcl_context();
   std::vector<std::string> arguments = {"--ros-args", "--params-file", impl_->param_file_.c_str()};
   if (sdf->HasElement("ros")) {
@@ -205,14 +206,15 @@ void GazeboRosControlPlugin::Load(gazebo::physics::ModelPtr parent, sdf::Element
 
     // Set namespace if tag is present
     if (sdf->HasElement("namespace")) {
-      std::string ns = sdf->GetElement("namespace")->Get<std::string>();
+      ns = sdf->GetElement("namespace")->Get<std::string>();
       // prevent exception: namespace must be absolute, it must lead with a '/'
       if (ns.empty() || ns[0] != '/') {
         ns = '/' + ns;
       }
+
       std::string ns_arg = std::string("__ns:=") + ns;
-      arguments.push_back(RCL_REMAP_FLAG);
-      arguments.push_back(ns_arg);
+      /*arguments.push_back(RCL_REMAP_FLAG);
+      arguments.push_back(ns_arg);*/
     }
 
     // Get list of remapping rules from SDF
@@ -313,7 +315,7 @@ void GazeboRosControlPlugin::Load(gazebo::physics::ModelPtr parent, sdf::Element
     new controller_manager::ControllerManager(
       std::move(resource_manager_),
       impl_->executor_,
-      "controller_manager"));
+      "controller_manager", ns));
   impl_->executor_->add_node(impl_->controller_manager_);
 
   if (!impl_->controller_manager_->has_parameter("update_rate")) {
